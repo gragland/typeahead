@@ -62,27 +62,29 @@ class Instatype extends React.PureComponent {
   }
 
   loadResultsFromServer(query) {
-
-
-
     this.setState({ loading: true });
 
-    this.props.requestHandler(query, this.props.limit, (data) => {
-
-      // If inputValue changed prior to request completing don't bother to render
-      if (this.state.inputValue != query){
-        return false;
-      }
-
-      // Truncate data to specific limit
-      data = data.slice(0, this.props.limit);
-
+    const commitResult = (data) => {
       this.setState({
         results: data,
         resultsQuery: query,
         loading: false
       });
-     
+    }
+
+    this.props.requestHandler(query, this.props.limit, (data) => {
+      // If inputValue changed prior to request completing don't bother to render
+      if (this.state.inputValue != query){
+        return false;
+      }
+
+      if (data) {
+        // Truncate data to specific limit
+        data = data.slice(0, this.props.limit);
+        commitResult(data);
+      } else {
+        commitResult([]);
+      }
     });
   }
 
@@ -181,7 +183,7 @@ class Instatype extends React.PureComponent {
 
   render(){
 
-    const { defaultInputValue, placeholder, loadingIcon, thumbStyle } = this.props;
+    const { data, defaultInputValue, placeholder, loadingIcon, thumbStyle } = this.props;
     const { results, resultsQuery, showResults, loading } = this.state;
 
     return (
@@ -206,7 +208,7 @@ class Instatype extends React.PureComponent {
           
         { showResults && 
           <Results 
-            data={results} 
+            data={data ? data : results} 
             resultsId={resultsQuery} 
             handleSelect={this.handleSelect} 
             thumbStyle={thumbStyle} />
@@ -226,6 +228,12 @@ Instatype.propTypes = {
   onBlur: React.PropTypes.func,
   requestHandler: React.PropTypes.func.isRequired,
   selectedHandler: React.PropTypes.func.isRequired,
+  data: React.PropTypes.arrayOf(
+    React.PropTypes.shape({
+      image: React.PropTypes.string,
+      name: React.PropTypes.string.isRequired
+    })
+  ),
 };
 
 Instatype.defaultProps = {
@@ -237,7 +245,8 @@ Instatype.defaultProps = {
   // Blur input ontouchstart. 
   // Fixes an phonegap/ios bug where input cursor doesn't show up on focus after previously blurring naturally
   // Don't enable unless experiencing this bug
-  blurOnTouchStart: false
+  blurOnTouchStart: false,
+  data: null,
 };
 
 // NOTE: Don't do an ES6 "export default Instatype" 
